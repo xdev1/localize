@@ -17,12 +17,12 @@ const documentElementObserver = new MutationObserver(update);
 const translations: Map<string, Translation> = new Map();
 let documentDirection = document.documentElement.dir || 'ltr';
 let documentLanguage = document.documentElement.lang || navigator.language;
-let fallback: Translation;
+let fallback: Translation | null = null;
 
 // Watch for changes on <html lang>
 documentElementObserver.observe(document.documentElement, {
   attributes: true,
-  attributeFilter: ['dir', 'lang']
+  attributeFilter: ['dir', 'lang', 'data-fallback-lang']
 });
 
 //
@@ -38,11 +38,6 @@ export function registerTranslation(...translation: Translation[]) {
     } else {
       translations.set(code, t);
     }
-
-    // The first translation that's registered is the fallback
-    if (!fallback) {
-      fallback = t;
-    }
   });
 
   update();
@@ -54,6 +49,9 @@ export function registerTranslation(...translation: Translation[]) {
 export function update() {
   documentDirection = document.documentElement.dir || 'ltr';
   documentLanguage = document.documentElement.lang || navigator.language;
+
+  const fallbackLang = document.documentElement.getAttribute('data-fallback-lang') || 'en';
+  fallback = fallbackLang === 'none' ? null : translations.get(fallbackLang) || null;
 
   [...connectedElements.keys()].map((el: LitElement) => {
     if (typeof el.requestUpdate === 'function') {
